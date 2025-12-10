@@ -1,0 +1,6 @@
+services:
+  - type: static_site
+    name: advanced-tracker
+    env: static
+    buildCommand: 'echo "No build required"'
+    staticPublishPath: advanced-tracker/public
